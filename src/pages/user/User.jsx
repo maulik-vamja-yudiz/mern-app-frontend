@@ -8,13 +8,13 @@ const User = () => {
     const [loadedUsers, setLoadedUsers] = useState();
     const { sendRequest, error, clearError, isLoading } = useHttpClient();
     useEffect(() => {
-        try {
-            const fetchRequest = async () => {
+        const fetchRequest = async () => {
+            try {
                 const responseData = await sendRequest("/users");
                 setLoadedUsers(responseData.users);
-            };
-            fetchRequest();
-        } catch (error) {}
+            } catch (error) {}
+        };
+        fetchRequest();
     }, [sendRequest]);
 
     return (

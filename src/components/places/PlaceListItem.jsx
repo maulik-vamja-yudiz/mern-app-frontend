@@ -1,22 +1,34 @@
 import React, { useContext, useState } from "react";
 import "../../assets/css/places/PlaceListItem.css";
+import { useHttpClient } from "../../hooks/HttpHook";
 import { AuthContext } from "../context/auth-context";
 import Button from "../FormElement/Button";
 import Card from "../UIElements/Card";
+import ErrorModal from "../UIElements/ErrorModal";
+import LoadingSpinner from "../UIElements/LoadingSpinner";
 import Map from "../UIElements/Map";
 import Modal from "../UIElements/Modal";
 
 const PlaceListItem = (props) => {
     const [showMap, setShowMap] = useState(false);
     const [showDeleteModel, setShowDeleteModel] = useState(false);
+    const { error, sendRequest, isLoading, clearError } = useHttpClient();
     const auth = useContext(AuthContext);
-    const confirmDeleteHandler = () => {
+
+    const confirmDeleteHandler = async () => {
         setShowDeleteModel(false);
-        console.log("Delete");
+        try {
+            await sendRequest(`/places/${props.id}`, "DELETE", null, {
+                Authorization: "Bearer " + auth.token,
+            });
+            props.onDelete(props.id);
+        } catch (error) {}
     };
 
     return (
         <>
+            <ErrorModal error={error} onClear={clearError} />
+            {/* Map Modal */}
             <Modal
                 onCancel={() => setShowMap(false)}
                 show={showMap}
@@ -31,6 +43,7 @@ const PlaceListItem = (props) => {
                     <Map center={props.coordinates} zoom={16} />
                 </div>
             </Modal>
+            {/* Delete Modal */}
             <Modal
                 show={showDeleteModel}
                 onCancel={() => setShowDeleteModel(false)}
@@ -57,8 +70,12 @@ const PlaceListItem = (props) => {
             </Modal>
             <li className="place-item">
                 <Card className="place-item__content">
+                    {isLoading && <LoadingSpinner asOverlay />}
                     <div className="place-item__image">
-                        <img src={props.image} alt={props.title} />
+                        <img
+                            src={`http://localhost:5000/${props.image}`}
+                            alt={props.title}
+                        />
                     </div>
                     <div className="place-item__info">
                         <h2>{props.title}</h2>
@@ -74,7 +91,7 @@ const PlaceListItem = (props) => {
                         >
                             VIEW ON MAP
                         </Button>
-                        {auth.isLoggedIn && (
+                        {auth.userId === props.creatorId && (
                             <>
                                 <Button to={`/places/${props.id}`}>EDIT</Button>
                                 <Button

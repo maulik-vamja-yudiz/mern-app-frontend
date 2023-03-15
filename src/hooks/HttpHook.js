@@ -21,22 +21,22 @@ export const useHttpClient = () => {
                     method,
                     body,
                     headers,
-                    signal: httpAbortController.signal,
+                    // signal: httpAbortController.signal,
                 });
-
                 const responseData = await response.json();
-
                 activeHTTPRequest.current = activeHTTPRequest.current.filter(
                     (reqCtrl) => reqCtrl !== httpAbortController
                 );
 
                 if (!response.ok) throw new Error(responseData.message);
+
+                setIsLoading(false);
                 return responseData;
             } catch (err) {
+                setIsLoading(false);
+
                 setError(err.message);
                 throw err;
-            } finally {
-                setIsLoading(false);
             }
         },
         []

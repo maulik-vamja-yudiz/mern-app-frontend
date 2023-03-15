@@ -13,6 +13,7 @@ import { useForm } from "../../hooks/formHook";
 import { AuthContext } from "../../components/context/auth-context";
 import ErrorModal from "../../components/UIElements/ErrorModal";
 import { useHttpClient } from "../../hooks/HttpHook";
+import ImageUpload from "../../components/FormElement/ImageUpload";
 
 const Auth = () => {
     const auth = useContext(AuthContext);
@@ -39,6 +40,7 @@ const Auth = () => {
                 {
                     ...formState.inputs,
                     name: undefined,
+                    userImage: undefined,
                 },
                 formState.inputs.email.isValid &&
                     formState.inputs.password.isValid
@@ -51,6 +53,10 @@ const Auth = () => {
                         value: "",
                         isValid: false,
                     },
+                    userImage: {
+                        value: null,
+                        isValid: false,
+                    },
                 },
                 false
             );
@@ -60,24 +66,24 @@ const Auth = () => {
 
     const authFormHandler = async (e) => {
         e.preventDefault();
-
         if (!isLoggedIn) {
             try {
-                await sendRequest(
+                const formData = new FormData();
+                formData.append("name", formState.inputs.name.value);
+                formData.append("email", formState.inputs.email.value);
+                formData.append("password", formState.inputs.password.value);
+                formData.append("userImage", formState.inputs.userImage.value);
+                console.log(formData);
+                const responseData = await sendRequest(
                     "/signup",
                     "POST",
-                    JSON.stringify({
-                        name: formState.inputs.name.value,
-                        email: formState.inputs.email.value,
-                        password: formState.inputs.password.value,
-                    }),
-                    { "Content-Type": "application/json" }
+                    formData
                 );
-                auth.login();
+                auth.login(responseData.user.id, responseData.token);
             } catch (error) {}
         } else {
             try {
-                await sendRequest(
+                const responseData = await sendRequest(
                     `/login`,
                     "POST",
                     JSON.stringify({
@@ -86,8 +92,7 @@ const Auth = () => {
                     }),
                     { "Content-Type": "application/json" }
                 );
-
-                auth.login();
+                auth.login(responseData.user.id, responseData.token);
             } catch (error) {}
         }
     };
@@ -101,15 +106,22 @@ const Auth = () => {
                 <hr />
                 <form onSubmit={authFormHandler}>
                     {!isLoggedIn && (
-                        <Input
-                            id="name"
-                            label="Your Name"
-                            element="input"
-                            type="text"
-                            validators={[VALIDATOR_REQUIRE()]}
-                            errorText="Please enter your  name"
-                            onInput={inputHandler}
-                        />
+                        <>
+                            <Input
+                                id="name"
+                                label="Your Name"
+                                element="input"
+                                type="text"
+                                validators={[VALIDATOR_REQUIRE()]}
+                                errorText="Please enter your name"
+                                onInput={inputHandler}
+                            />
+                            <ImageUpload
+                                center
+                                id="userImage"
+                                onInput={inputHandler}
+                            />
+                        </>
                     )}
                     <Input
                         id="email"
@@ -127,9 +139,9 @@ const Auth = () => {
                         label="Password"
                         validators={[
                             VALIDATOR_REQUIRE(),
-                            VALIDATOR_MINLENGTH(5),
+                            VALIDATOR_MINLENGTH(6),
                         ]}
-                        errorText="Please enter your Valid Password"
+                        errorText="Please enter your Valid Password and Password must be at least 6 characters long"
                         onInput={inputHandler}
                     />
                     <Button type="submit" disabled={!formState.isValid}>
